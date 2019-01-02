@@ -82,7 +82,7 @@ Conventions
 - single quotes around non-JSX properties  
 
 JSX vs HTML (basically putting HTML style things in JS syntax)
-- Adding custom inline styling to an element uses different syntax
+- Adding custom inline styling to an element uses different syntax (`<button style={{ backgroundColor: 'blue', color: 'white'}}>{ buttonText.text }</button>`)
 - Adding a class to an element users different syntax (class -> className)
 - JSX can reference JS variables
 -
@@ -104,6 +104,11 @@ PROS
 - Easier code organization!
 - Can use the React system `state`, making it easier to handle user input
 - Understands lifecycle events (like `ComponentDidMount`) which makes it easier for things to happen when the app first starts
+RULES
+- Must be a JS class
+- Must extend (be a subclass of) React.Component
+- Must define a render method that must return some amount of JSX
+- Must have a constructor function that passes `props` as an argument and contains `super(props)`.
 
 The three tenets:
 - Component Nesting: a component can be shown inside of another (<App />)
@@ -120,6 +125,31 @@ Creating a Reusable & Configurable Component:
 Linking Components:
 - export Component from the JS file with `export <Component-Name>;`
 - import the Component in the file of the Component that needs to use it with `import <Component-Name> from 'Component-File';`
+
+### Render
+
+Each React component MUST contain a render method.
+
+Avoid using conditionals in the render method/having multiple return statements inside of a render method. Helper functions (like `renderContent()` below) can be used:
+```
+renderContent(){
+    if (this.state.errorMessage && !this.state.lat) {
+      return <div>Error: {this.state.errorMessage}</div>;
+    }
+    if (!this.state.errorMessage && this.state.lat) {
+      return <SeasonDisplay lat={this.state.lat} />;
+    }
+
+    return <Loader message="Please accept location request" />;
+  }
+  render() {
+    return(
+      <div style={{border: '5px solid red'}}>
+        {this.renderContent()}
+      </div>
+    )
+}
+```
 
 ### Props
 
@@ -139,3 +169,94 @@ Providing props from parent to child:
 **Props is an object with a key**, which is provided by the parent component. The child component can consume the prop by accessing the object.key. Multiple props keys can be created so that multiple props can be passed!
 
 We can also pass one component to another as props: `<ApprovalCard> <CommentDetail /> </ApprovalCard>`. The child component (`CommentDetail`) then shows up as a props inside of `ApprovalCard` as `{props.children}` (in order to show the whole object, instead of referencing each individual property that makes up `CommentDetail`). Other text or elements can also be passed as `props.children` in this way.  
+
+### State
+
+**State is a JS object that contains data relevant to a component.**
+
+**The key to get a component to rerender (update) is to update its state (using setState method). Never assigning a new value to this.state directly!**
+(The only time you can assign a value to state directly [direct assignment] is when initializing this.state in the constructor function.)
+
+State is always an object!
+
+Rules:
+- Only usable with class-based components (*This is has been changed with the introduction of the new Hooks system in React*)
+- Props and state are often confused!
+- `State` is a JS object that contains data relevant to a component
+- Updating `state` on a component causes the component to (almost) instantly rerender
+- State must be initialized when a component is created  
+- **State can ONLY be updated using the setState method**
+
+Two ways to initialize state:
+- object in the constructor method - `this.state = {}`
+- outside of constructor method, use `state ={}` - the constructor methods can be removed entirely with this method (this is because Babel will essentially implement the constructor method for us, so it's a short cut for the developer)
+
+State can be passed as a prop to other components!
+
+### Component Lifecycle
+
+Lifecycle methods are called at specific times during a component's lifecycle.
+
+Timeline:
+- constructor - constructs the initial data of the app // good place to do state initialization and initial data loading (like network requests - although this is not best practice)
+- render - required, gets called after initial app creation // avoid doing anything other than returning JSX
+- componentDidMount - this is called one time immediately after the component appears on the screen // Good place to do data loading or starting an outside process (like retrieving data from a database)
+- componentDidUpdate - waits for when something is updated, as it is called automatically when the component is updated (also, the render method is called right before componentDidUpdate, as something has to be rerendered/updated to trigger this method) // good place to do more data-loading when state/props change
+- componentWillUnmount - waits and is immediately called when a component is no longer shown // good place to do cleanup (especially for non-React stuff)
+
+There are other rarely used lifecycle methods:
+- shouldComponentUpdate
+- getDerivedStateFromProps
+- getSnapshotBeforeUpdate
+
+
+## Project Notes
+
+### Seasons
+
+The `App` component will pass data to our `SeasonDisplay` component so it can change the display based on the user's location (retrieved via `window.navigator.geolocation.getCurrentPosition()`) and date.
+
+Timeline for getting geolocation data when using a functional component:
+- JS file is loaded by user's browser
+- Our `App` component gets called
+- It calls the geolocation service
+- `App` returns JSX and gets rendered as HTML
+- ...still waiting for geolocation info even though our app is already rendered...
+- We eventually get the result of the geolocation request
+The reason for this is that there is no understanding of lifecycle events with only functional components. Class-based components will solve this issue - it can tell the app to rerender itself once the data has arrived, and it can make use of React's `state` system.
+
+After refactoring the code to use class-based components, here is our update timeline:
+- JS file is loaded by user's browser
+- Instance of App component is created
+- App components `constructor` function gets called (along with `super(props)`)
+- State object is created and assigned to the `this.state` property
+- We call geolocation service
+- React calls the component's render method
+- App returns JSX, gets rendered to the page as HTML
+- ...waiting...
+- We get the geolocation result!
+- We are able to update our state object with a call to `this.setState` now that the new data has arrived (state can only be updated with the setState method)
+- React sees that we updated the state of a component
+- React calls our `render` method again
+- Render method returns some updated JSX
+
+
+Example of Conditional Rendering:
+```
+render() {
+       if (this.state.errorMessage && !this.state.lat){
+           return <div>Error: {this.state.errorMessage}</div>
+       };
+       if(!this.state.errorMessage && this.state.lat){
+           return <div>Latitude: {this.state.lat}</div>
+       };
+
+       return <div>Loading...</div>;
+ }
+```
+
+Adding CSS files:
+- import CSS files into the relevant component files (`import './SeasonDisplay.css'`)
+
+We can apply default props to a component, in case other props are not available
+`<Component>.defaultProps = {}`
