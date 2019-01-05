@@ -1,5 +1,7 @@
 # Notes
 
+## Bookmarks
+- Breather and Review lesson (lesson 69)
 
 ## Getting Started
 
@@ -172,12 +174,14 @@ We can also pass one component to another as props: `<ApprovalCard> <CommentDeta
 
 ### State
 
-**State is a JS object that contains data relevant to a component.**
+**State is a JS object that contains data relevant to a component.** It is what can tell the component to automatically rerender.
 
 **The key to get a component to rerender (update) is to update its state (using setState method). Never assigning a new value to this.state directly!**
 (The only time you can assign a value to state directly [direct assignment] is when initializing this.state in the constructor function.)
 
 State is always an object!
+
+We put data in state if we expect it to change over time!
 
 Rules:
 - Only usable with class-based components (*This is has been changed with the introduction of the new Hooks system in React*)
@@ -209,6 +213,49 @@ There are other rarely used lifecycle methods:
 - getDerivedStateFromProps
 - getSnapshotBeforeUpdate
 
+### Other Elements
+
+- How do we get feedback from the user?
+- How do we fetch data from some outside API or server?
+- How do we show lists of records?
+
+### Event Handlers
+
+When calling a method from your class-based component when an event happens (such as `onChange`), it does NOT get called as a function - needs to be `onChange={this.onInputChange}` - which AUTOMATICALLY obtains the event object for us so we can go ahead and pass it in the method itself.
+> Question: what if you used `onChange={(e) => this.onInputChange(e)}`?
+
+Common event handlers:
+- onClick: user clicks on something
+- onChange: user changes text in an input
+- onSubmit: user submits a form
+
+Common method name for these:
+- onInputChange or handleInputChange etc.
+
+Controlled vs Uncontrolled Elements
+
+### `this` in React class-based components
+
+Common error message: "Cannot read property 'state' of undefined"
+Remember that `this` changes depending on where/when the function is called.
+
+Solutions:
+1. Define our constructor function inside of our class and bind the `this` keyword.
+ Ex: `this.state = this.state.bind(this)`
+2. Use an arrow function, which automatically binds the value of `this` for everything inside of the function
+ Ex: `onFormSubmit = (e) => {
+      e.preventDefault();
+      console.log(this.state.searchString);
+  }`
+3. Passing an arrow function directly into the event handler prop, in the callback function
+ Ex: `onSubmit={() => this.onFormSubmit()}`
+
+
+### React refs
+
+Short for 'reference'.
+A system that gives direct access to a single DOM element rendered by a React component.
+We create refs in the constructor, assign them to instance variables, then pass to a particular JSX element as props.  
 
 ## Project Notes
 
@@ -260,3 +307,114 @@ Adding CSS files:
 
 We can apply default props to a component, in case other props are not available
 `<Component>.defaultProps = {}`
+
+
+### Pics
+
+App Challenges:
+- Need to get a search term from the user (receiving user interactions)
+- Need to use that search term to make a request to an outside API and fetch data
+- Need to take the fetched images and show them on the screen in a list
+
+Separate Components:
+- main App component, for nesting:
+- SearchBar component
+- ImageList component
+
+After adding an event handler to a text input...
+Flow:
+- User types into the input
+- Callback gets invoked
+- We update our component by calling setState with the new value
+- Component rerenders itself
+- Input is told what the value is (coming from state)
+ = a controlled element!
+ Otherwise, the React component does not have access later to the input data, only the HTML doc does. That data needs to be stored and accessible in our React app, not solely in the DOM.
+ -> **We want to store our data inside of our components (in state), not inside the DOM.**
+ This is why we add the line `value={this.state.searchString}` - we want to make sure the data is being provided by our application, not by the DOM!!
+
+ Passing event handlers as a prop so that state can be handled by a parent component.
+ `<SearchBar onSubmit={this.onSearchSubmit} />`
+
+ For API requests:
+ - axios - 3rd party package (more built in capability) (`npm install --save axios`)
+ - fetch - built in browser function (more lightweight but lower level)
+
+ Used this code for unsplash api:
+ ```
+ onSearchSubmit(searchString){
+        console.log(searchString);
+        // use searchString to send a request to Unsplash API
+        axios.get('https://api.unsplash.com/search/photos', {
+            params: { query: searchString },
+            headers: {
+                Authorization: 'Client-ID 8807b453b0e307c764ee01cdb13eb198415a0a37e55824f77b1be424bdacd174'
+            }
+        })
+        // with promised based syntax
+        .then(response => {
+          console.log(response.data.results);
+          });
+    }
+    ```
+
+    OR
+
+    ```
+    // async await based syntax
+    async onSearchSubmit(searchString){
+        const response = await axios
+        .get('https://api.unsplash.com/search/photos', {
+            params: { query: searchString },
+            headers: {
+                Authorization: 'Client-ID 8807b453b0e307c764ee01cdb13eb198415a0a37e55824f77b1be424bdacd174'
+            }
+        });
+
+        console.log(response.data.results);
+    }
+    ```
+
+`.then` method is the promised based syntax to receive and handle the response data.
+
+`async await` based syntax does the same thing. Put `async` keyword in front of method name, find what is being returned/taking time to resolve and put `await` keyword in front of that. What is returned gets saved to a variable (like `const response`).
+
+(The `.then` method handles the response with the JSON data.)
+
+API request timeline:
+- Component renders itself one time with no list of images!
+- onSearchSubmit method called
+- Request made to unsplash
+- ...wait... (it is an asynchronous request)
+- request complete
+- set image data on state of App component
+- App component rerenders and shows images
+
+Displaying the retrieved data:
+Using the `map()` method to loop through the retrieved data and display the individual array elements.
+```
+const images = props.images.map((image) => {
+        return <img src={image.urls.regular} alt={image.description} key={image.id} />
+    });
+    ```
+This can be further deconstructed to:
+```
+const images = props.images.map(({ urls, description, id }) => {
+    return <img src={urls.regular} alt={description} key={id} />;
+  });
+```
+
+Don't forget to add a key to each item! The key prop allows the React diffing method to occur - to only rerender the changed elements, which saves time. It compares the items by their keys. (It is a performance consideration. This is only important for lists of elements.) *The key gets added to the root element that is being returned by the map method.*
+
+Steps to style ImageCard to be the height of the image:
+- let the ImageCard render itself and its image
+- Reach into the DOM and figure out the height of the image (`document.querySelector('img').clientHeight` but using the React ref system)
+- Set the image height on state to get the component to rerender
+- When rerendering, assign a 'grid-row-end' to make sure the image takes up the appropriate space
+
+Wrap-up:
+- Used event handlers to pass in a callback function from a specific function, so it will be called when an action occurs (we ran into the issue of the binding of the `this` keyword) - if you have a callback function it is best to use an arrow function to automatically bind the `this` keyword
+- To communicate from a child to parent, we pass a prop to the child from the parent, so the child can use it to let the parent know an action occurred, then the parent can handle the updates and tell the child how to rerender (by updating state)
+- it is important to have keys on each listed item to allow the React diffing system to occur
+- the React ref system (`createRef()`) allows us to access/reference info from the DOM
+- we used the grid CSS system a bit to see how it can interact uniquely with React  
