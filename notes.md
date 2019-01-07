@@ -417,4 +417,22 @@ Wrap-up:
 - To communicate from a child to parent, we pass a prop to the child from the parent, so the child can use it to let the parent know an action occurred, then the parent can handle the updates and tell the child how to rerender (by updating state)
 - it is important to have keys on each listed item to allow the React diffing system to occur
 - the React ref system (`createRef()`) allows us to access/reference info from the DOM
-- we used the grid CSS system a bit to see how it can interact uniquely with React  
+- we used the grid CSS system a bit to see how it can interact uniquely with React cd
+
+
+### Videos
+
+APIs are an asynchronous operation. Anytime we want to use it, we need to handle the data with either promises or the async await syntax.
+Example:
+```
+handleTermSubmit = async (term) => {
+        // below is a preconfigured instance of axios
+        const response = await youtube.get('/search', {
+            params: {
+                q: term
+            }
+        });
+    };
+    ```
+Updating state with fetched data:
+- add async keyword before the parameter; add await keyword before the instance of axios we called (what we're waiting on); save the retrieved data as a variable (`response`)
