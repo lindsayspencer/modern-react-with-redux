@@ -2,6 +2,11 @@
 
 Redux allows us to extract state to a Redux library. React is really for handling user interaction.
 Has a high initial learning curve.
+Will probably use several name exports (in addition to default exports):
+```
+import React from 'react';
+import { selectSong } from '../actions';
+```
 
 ## What is Redux?
 
@@ -142,9 +147,71 @@ Notes:
 
 ## React with Redux
 
-Uses React (original library), React-Redux (allows the two to communicate), Redux (libraries to use Redux system)
+Uses React (original library), React-Redux (allows the two to communicate), Redux (libraries to use Redux system).
 
+The store contains our reducers and state of our application.
+
+### Designing Redux Side of Application
+Provider and Connect components are from Redux - we create instances of them.
+Provider (provides data to our other components) => App => Connect (communicates with Provider in order to get state updates, delivers data to other components that need it) => OtherComponents  
+/src
+  index.js
+  /actions
+    index.js (commonly done)
+  /components
+  /reducers
+    index.js (commonly done)
+  /index.js
+
+### Using the Redux Library
+Redux documentation will tell you what is a named vs exported default.
+On reducers list, import:
+`import { combineReducers } from 'redux';`
+in order to achieve:
+`// creating an object of our reducers (where the action/form needs to be sent to on creation)
+const ourDepartments = combineReducers({
+  accounting: accounting,
+  claimsHistory: claimsHistory,
+  policies: policies
+});
+`
+
+### Steps to Set Up Redux
+1. create src/actions directory; add new index.js file
+2. create src/reducers directory; add new index.js file
+3. code action creators with named exports
+4. code reducers; import `{ combineReducers }` from redux; use `combineReducers({reducer: reducer...})`; `export default` the combined reducers  
+5. in the root index.js file, import `{ Provider }` from react-redux and `{ createStore }` from redux; wrap the App component in the Provider component, passing it a single prop, `store={createStore(reducers)}`
+6. in child component files, use `import { connect } from 'react-redux';` in order to utilize the Connect component to listen for changes in state from the Provider; also add `mapStateToProps()` function with state passed as its argument  (it is intended to retrieve state!); then export as `export default connect(mapStateToProps)(SongList);` (connect is a function that returns a function - the component is passed into the nested function) - now our components have access to state for the whole application!
+Ex:
+```
+import React, { Component } from 'react';
+import { connect } from 'react-redux';
+
+class SongList extends Component {
+    render(){
+        return(
+            <div>SongList</div>
+        )
+    };
+};
+
+const mapStateToProps = (state) => {
+    return { songs: state.songs };
+};
+
+export default connect(mapStateToProps)(SongList);
+```
+7. Can pass the action creator as a props as well via the connect function; it is then an available function from the props for that component! **Passing it into connect is what allows the dispatch() function to occur - otherwise, we can call the action creator, but it will only create the action, not send it to the reducers for us. The connect function CONNECTS everything together for us.**
+
+### Extra Notes
+1. Redux is not magic - it does not automatically detect action creators being called
+2. Redux does not automatically detect a function returning an object that is an 'action'
 
 ## Project: Songs
 
 SongList displayed on the left, and SongDetail of clicked song displayed on the right.
+
+Redux:
+- Reducers: Song list reducer, Selected song reducer (our two pieces of state)
+- Action Creators: select song (our props action handler that will update our state)
