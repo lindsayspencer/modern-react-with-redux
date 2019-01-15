@@ -215,3 +215,10 @@ SongList displayed on the left, and SongDetail of clicked song displayed on the 
 Redux:
 - Reducers: Song list reducer, Selected song reducer (our two pieces of state)
 - Action Creators: select song (our props action handler that will update our state)
+
+## Project:
+http://jsonplaceholder.typicode.com/
+Goals:
+- understand Reducers
+- understand making API requests with Redux
+- understand the purpose of 'redux-thunk' (a middleware)
